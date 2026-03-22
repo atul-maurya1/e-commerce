@@ -30,7 +30,7 @@ sellerRoutes.post('/logout', isLoggedIn, authorizedRoles('seller'), sellerLogout
 
 sellerRoutes.post('/complete-registration', isLoggedIn, authorizedRoles('seller'), completeRegistration)
 sellerRoutes.post('/add-product', isLoggedIn, upload.array("images", 5), authorizedRoles('seller'), addProduct)
-sellerRoutes.put('/edit-product/:id', isLoggedIn, upload.array("images", 5), authorizedRoles('seller'), editProduct)
+sellerRoutes.patch('/edit-product/:id', isLoggedIn, upload.array("images", 5), authorizedRoles('seller'), editProduct)
 sellerRoutes.delete('/remove-product/:id', isLoggedIn, authorizedRoles('seller'), removeProduct)
 sellerRoutes.get('/my-products', isLoggedIn, authorizedRoles('seller'), seeAllProducts)
 sellerRoutes.get('/view-product/:id', isLoggedIn, authorizedRoles('seller'), viewProduct) 

@@ -6,6 +6,7 @@ import tempUser from '../model/tempUser.model.js'
 import generateToken from '../utils/jwt.js'
 import {generateOTP} from '../utils/otpGenerator.js'
 import Cart from '../model/cart.model.js'
+import Address from '../model/address.model.js'
 
 
 
@@ -196,6 +197,10 @@ export const mailVerfication = async (req, res, next) => {
     const user = await User.findOne({_id: userId, userType: 'buyer'})
      if(!user) {
      return res.status(404).json({ message: "User not found" }); 
+  }
+
+  if(user.isVerified===true){
+    return res.status(400).json({message: 'account is already verified'})
   }
   
     console.log("user is ", user)
@@ -403,10 +408,121 @@ export const removeToCart = async (req, res, next) => {
     }catch(e){
         console.log("error while removing cart items: " , e)
         return res.status(500).json({message: "Internal server error"})
+    } 
+}
+
+export const deleteCart = async (req, res, next) => {
+    try{
+      const cartId = req.params.cartId
+      //console.log("cart id: ", cartId)
+      const userId = req.user.id
+
+      const isCart = await Cart.findOne({user: userId})
+     // console.log(isCart)
+      if(!isCart){
+        return res.status(404).json({message: 'No cart'})
+      }
+     const deleteCart = await Cart.findByIdAndDelete({_id: cartId})
+      return res.status(200).json({
+        success: true,
+        message: 'cart delete successfully',
+        deleteCart
+      })
+
+    }catch(e){
+        console.error('error while delete cart: ', e)
+        return res.status(500).json("Internal server error")
+    }
+}
+
+export const getProfile = async (req, res, next) => {
+    try{
+        const userId = req.user.id
+        const user = await User.findOne({_id: userId})
+        if(!user){
+            return res.status(400).json({message: 'not found'})
+        }
+       const address = await Address.find({user: userId })
+      
+        user.password = undefined
+        return res.status(200).json({
+            success: true,
+            message: 'user data get successfully',
+            user,
+            address   
+        })
+
+    }catch(e){
+        console.error("error while getting profile: ", e)
+        return res.status(500).json({message: 'Internal server error'})
     }
 }
 
 
+export const addAddress = async (req, res, next) => {
+    try{
+        const userId = req.user.id;
+        const{country, state, city, pinCode, address, houseNumber, contact} = req.body
+        if(!country || !state || !city || !pinCode  || !address, !contact){
+            return res.status(400).json({message: 'All fields are required'})
+        }
+           let createAddress
+            createAddress = await Address.create({
+                user: userId,
+                country,
+                state,
+                city,
+                pinCode,
+                address,
+                houseNumber, 
+                contact,
+            })
 
+        return res.status(201).json({
+            success: true,
+            message: 'address is created',
+            createAddress
+        })
+
+    }catch(e){
+      console.error('error while add address', e)
+      return res.status(500).json({message:'Internal server error'})
+    }
+} 
+
+export const updateAddress = async (req, res, next) => {
+    try{
+        const AddressId = req.params.id
+        const{country, state, city, pinCode, address, houseNumber, contact} = req.body
+
+        const isAddress = await Address.findByIdAndUpdate(AddressId, {
+           country: country,
+           state: state,
+           city: city,
+           pinCode: pinCode,
+           address: address,
+           houseNumber: houseNumber,
+           contact: contact
+        }, { new: true } // ✅ returns updated document
+        )
+
+        if(!isAddress){
+            return res.status(400).json({ message: "Address not found" })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'address updated'
+        })
+
+    }catch(e){
+        console.error('error while updating address: ', e)
+        return res.status(500).json({message: 'Internal server error'})
+    }
+}
+
+export const orderHistroy = async (req, res, next) => {
+    
+}
 
 

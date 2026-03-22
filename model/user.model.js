@@ -64,6 +64,8 @@ const userSchema = new mongoose.Schema({
             return this.profileCompleted === true;
         },
     },
+
+    
        
 
 }, { timestamps: true });
