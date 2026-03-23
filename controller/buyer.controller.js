@@ -7,8 +7,7 @@ import generateToken from '../utils/jwt.js'
 import {generateOTP} from '../utils/otpGenerator.js'
 import Cart from '../model/cart.model.js'
 import Address from '../model/address.model.js'
-
-
+import Order from '../model/order.model.js'
 
 const cookieOption = {
     maxAge: 7*24*60*60*1000, // 7 days
@@ -503,7 +502,7 @@ export const updateAddress = async (req, res, next) => {
            address: address,
            houseNumber: houseNumber,
            contact: contact
-        }, { new: true } // ✅ returns updated document
+        }, { new: true } //  returns updated document
         )
 
         if(!isAddress){
@@ -521,8 +520,172 @@ export const updateAddress = async (req, res, next) => {
     }
 }
 
+
+export const getOrderPageData  = async (req, res, next) => {
+    try{
+        const productId = req.params.id
+        const userId = req.user.id
+
+        const user=  await User.findById(userId)
+        console.log(user.isVerified)
+        if(user.isVerified !== true){
+            return res.status(400).json({message: 'please verify email id'})
+        }
+        const product = await Product.findById(productId)
+        if(product.quantity === 0 || !product){
+            return res.status(400).json({message: 'out of stock'})
+        } 
+
+        const address = await Address.findOne({user: userId})
+        if(!address){
+            return res.status(400).json({message: 'please add address'})
+        }
+
+        res.status(400).json({
+            success: true,
+            message: 'product fetch for order',
+            product,
+            address,
+        })
+
+
+    }catch(e){
+        console.error("error while order: ", e)
+        return res.status(500).json({message: 'Internal server error'})
+    }
+}
+
+export const createOrder = async (req, res, next) => {
+    try{
+        const userId = req.user.id
+        const productId = req.params.id
+        if(!productId){
+            return res.status(404).json({message: 'product not found'})
+        }
+        const product = await Product.findById(productId)
+        if(!product){
+            return res.status(404).json({message: 'product not found'})
+        }
+       const address = await Address.findOne({user: userId})
+
+       if(!address){
+        const{country, state, city, pinCode, address, houseNumber, contact} = req.body
+        if(!country || !state || !city || !pinCode  || !address, !contact){
+            return res.status(400).json({message: 'All fields are required'})
+        }
+               createAddress = await Address.create({
+                user: userId,
+                country,
+                state,
+                city,
+                pinCode,
+                address,
+                houseNumber, 
+                contact,
+            })
+            res.status(201).json({message: 'address created'})
+        }
+
+        const {quantity} = req.body      
+        let totalPrice = product.price * (quantity || 1)
+        console.log("total price: ", totalPrice)
+
+        if(product.quantity < quantity){
+            return res.status(400).json({ message: 'Not enough stock' });
+        }
+
+        const {paymentMethod} = req.body  // implement using radio button in front end
+        if(!paymentMethod){
+            return res.status(400).json({message: 'please choose payment method'})
+        }
+        const order = await Order.create({
+              user: userId,
+              product: productId,
+              quantity: quantity,
+              totalPrice: totalPrice,
+              status: 'pending',
+              address: address._id.toString(),
+              paymentMethod: paymentMethod,
+              paymentStatus : 'pending'
+
+        })
+
+        return res.status(201).json({
+            success: true,
+            message: 'Order is create successfully',
+            order: order
+        })
+    }catch(e){
+        console.error('error while creating order', e)
+        return res.status(500).json({message: 'Internal server error'})
+    }
+}
+
+export const checkOut = async (req, res, next) => {
+    try{
+        const orderId = req.params.orderId
+        const order = await Order.findById(orderId).populate('product')
+        if (!order) {
+            return res.status(400).json({ message: 'No order found' });
+        }
+        if(order.status==='confirmed'){
+            return res.status(400).json({message: 'order is already confirmed'})
+        }
+       // console.log("order is: ", order)
+        if(!order){
+            return res.status(400).json({message: 'sorry you have no order '})
+        }
+        if(order.paymentMethod==="cashOnDelivery"){
+            order.status = 'confirmed'
+            order.paymentStatus = 'pending' // payment confiremed during the delivery
+        }
+        // upi implement later
+
+        const product = order.product
+        if(product.quantity < order.quantity){
+            return res.status(400).json({ message: 'Not enough stock' });
+        }
+        const totalQunatity  = product.quantity-order.quantity
+        //console.log("totalQunatity: ", totalQunatity)
+        await Product.findOneAndUpdate(order.product, {
+           quantity: totalQunatity
+       })
+      
+        await order.save()
+        return res.status(200).json({
+           success: true,
+           "message": 'order is confirmed successfully',
+            order  // in front end show order id and status
+        })
+    }catch(e){
+        console.error("error while checkout" , e)
+        return res.status(500).json({message: 'Internal server error'})
+    }
+}
+
 export const orderHistroy = async (req, res, next) => {
-    
+      try{
+        const userId = req.user.id
+        if(!userId){
+            return res.status(400).json({message: 'please login'})
+        }
+        const orderHistory = await Order.find({user: userId, status: "confirmed"}, )
+         .populate("product",  "name description price images" )
+         .sort({ createdAt: -1 })
+         .populate("address")
+        if(!orderHistory){
+            return res.status(404).json({message: 'no any order found'})
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Order history fetch successfully",
+            orderHistory 
+        })
+
+      }catch(e){
+        console.error("error while fetching order history", e)
+        return res.status(500).json({message: "Internal server error"})
+      } 
 }
 
 

@@ -19,6 +19,9 @@ import {
     deleteCart,
     updateAddress,
     orderHistroy,
+    getOrderPageData,
+    createOrder, 
+    checkOut,
 } from '../controller/buyer.controller.js'
 
 import {isLoggedIn, authorizedRoles} from '../middleware/auth.js'
@@ -44,9 +47,16 @@ buyerRoutes.delete('/delete-cart/:cartId', isLoggedIn, authorizedRoles('buyer'),
 buyerRoutes.get('/profile', isLoggedIn, authorizedRoles('buyer'), getProfile )
 buyerRoutes.post('/profile/add-address', isLoggedIn, authorizedRoles('buyer'), addAddress)
 buyerRoutes.patch('/update-address/:id' , isLoggedIn, authorizedRoles('buyer'), updateAddress)
+
+buyerRoutes.get('/get-order/:id', isLoggedIn, authorizedRoles('buyer'), getOrderPageData )
+buyerRoutes.post('/create-order/:id', isLoggedIn, authorizedRoles('buyer'), createOrder)
+buyerRoutes.post('/order-checkout/:orderId', isLoggedIn, authorizedRoles('buyer'), checkOut)
+
 buyerRoutes.get('/profile/order-history', isLoggedIn, authorizedRoles('buyer'),  orderHistroy)
 
-// buyer profile => order history, add and update add
+// handle return 
+
+//buyer profile => order history, add and update add
 
 
 export default buyerRoutes;

@@ -1,45 +1,43 @@
 import mongoose from 'mongoose';
 
+// for single product order
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    items: [{
-        product: {  
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product',
-        },
-        quantity: {
-            type: Number,
-        }
-    }],
+     product: {  
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+   },
+    quantity: {
+        type: Number,
+        default: 1
+    },
     totalPrice: {
         type: Number,
+        required: true
     },
     status: {
         type: String,
         enum: ['pending', 'confirmed', 'shipped', 'outForDelivery', 'delivered', 'cancelled'],
         default: 'pending'
     },
-    address: [{
-        state: {
+    address: {
+         type: mongoose.Schema.Types.ObjectId,
+         ref: 'Address',
+    },
+
+    paymentMethod: {
             type: String,
-            required: true,
-        },
-        city:{
-            type: String,
-            required: true,
-        },
-        pinCode: {
-            type: String,
-            required: true,
-        },
-        street: {
-            type: String,
-            required: true,
-        }
-    }]
+            enum: ['cashOnDelivery', 'upi']
+    },
+
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'confirmed', 'failed', 'cashOnDelivery'],
+        default: 'pending'
+    }
 
 }, { timestamps: true });
 
