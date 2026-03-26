@@ -418,10 +418,16 @@ export const viewProduct = async (req, res, next) => {
 export const viewOrders = async (req, res, next) => {
     console.log('seller view order')
    try{
-    console.log(req.user)
-    const totalOrders = await order.find()
-    //console.log(totalOrders.length)
-    if(totalOrders.length <= 0){
+    const sellerId = req.user.id
+   // console.log(req.user)
+    const totalOrders = await order.find({ status: 'confirmed'})
+    .populate('product', 'seller name price images');
+    
+      const orders = totalOrders.filter(
+            ord => ord.product?.seller?.toString() === sellerId ); // ? if exits otherwise null
+
+   // console.log("orders is: ", orders)
+    if(orders.length === 0){
         return res.status(404).json({message: 'No order is found yet'})
     }
 
@@ -430,10 +436,10 @@ export const viewOrders = async (req, res, next) => {
     res.status(200).json({
         success: true,
         message: 'total order is fetched successfully',
-        totalOrders
+        orders
     })
 
-   }catch(e){
+   }catch(e){  
 
    }
 }

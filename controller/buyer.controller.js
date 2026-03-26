@@ -638,6 +638,8 @@ export const checkOut = async (req, res, next) => {
         if(order.paymentMethod==="cashOnDelivery"){
             order.status = 'confirmed'
             order.paymentStatus = 'pending' // payment confiremed during the delivery
+        }else{
+            return res.status(400).json({message: 'upi implement later'})
         }
         // upi implement later
 
